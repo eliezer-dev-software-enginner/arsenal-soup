@@ -15,10 +15,33 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-    static void main(String[] args) throws IOException, InterruptedException {
+    static void main(String[] args) {
+        if(args.length < 2) {
+            IO.println("Missing runtime arguments! Aborting");
+            return;
+        }
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        // Agendar para executar a cada 5 minutos
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                executarTarefa(args);
+            } catch (Exception e) {
+                System.err.println("Erro: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, 0, 10, TimeUnit.HOURS);
+    }
+
+    private static void executarTarefa(String[] args) throws IOException, InterruptedException {
+
         Path dataDirectory = Path.of(System.getProperty("user.home")).resolve("arsenal-soup");
         if (!Files.exists(dataDirectory)) Files.createDirectory(dataDirectory);
 
@@ -33,62 +56,51 @@ public class Main {
             });
         }
 
+        String url = "https://recomendacao.globo.com/v3/globocom/rec/g1-trendings?registerImpression=false&responseFormat=legacyPublishing&perPage=20";
 
-        while (true) {
-            try {
-                String url = "https://recomendacao.globo.com/v3/globocom/rec/g1-trendings?registerImpression=false&responseFormat=legacyPublishing&perPage=20";
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
 
-                HttpClient client = HttpClient.newHttpClient();
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .GET()
-                        .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = mapper.readTree(response.body());
 
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                JsonNode root = mapper.readTree(response.body());
+        //JsonNode root = mapper.readTree(Path.of("C:\\Users\\3855-2278\\Documents\\outros\\dev\\java\\g1-soup\\response.json").toFile());
 
-                //JsonNode root = mapper.readTree(Path.of("C:\\Users\\3855-2278\\Documents\\outros\\dev\\java\\g1-soup\\response.json").toFile());
+        List<Content> noticiasTemp = new ArrayList<>();
 
-                List<Content> noticiasTemp = new ArrayList<>();
+        for (JsonNode item : root) {
+            JsonNode content = item.get("content");
+            Content result = getResult(content);
 
-                for (JsonNode item : root) {
-                    JsonNode content = item.get("content");
-                    Content result = getResult(content);
+            System.out.println("Título: " + result.titulo());
+            System.out.println("Resumo: " + result.resumo());
+            System.out.println("Link: " + result.link());
+            System.out.println("Imagem: " + result.imagem());
+            System.out.println("-----");
 
-                    System.out.println("Título: " + result.titulo());
-                    System.out.println("Resumo: " + result.resumo());
-                    System.out.println("Link: " + result.link());
-                    System.out.println("Imagem: " + result.imagem());
-                    System.out.println("-----");
+            // Verificar se já existe (forma mais eficiente)
+            boolean existe = noticiasList.stream()
+                    .anyMatch(noticia -> noticia.titulo().equals(result.titulo()));
 
-                    // Verificar se já existe (forma mais eficiente)
-                    boolean existe = noticiasList.stream()
-                            .anyMatch(noticia -> noticia.titulo().equals(result.titulo()));
+            if (existe) {
+                System.out.println("Notícia já presente no arquivo... Pulando....");
+            } else {
+                String testChannel = "-1003457993247";
+                String chatIdTarget = args[0] == null ? testChannel : args[0];
 
-                    if (existe) {
-                        System.out.println("Notícia já presente no arquivo... Pulando....");
-                    } else {
-                        String testChannel = "-1003457993247";
-                        String chatIdTarget = args[0] == null ? testChannel : args[0];
-
-                        String g1 = "-1002403342784";
-                        new Bot(args[1]).sendMessageTo(result, chatIdTarget);
-                        noticiasTemp.add(result);
-                        System.out.println("Nova notícia adicionada: " + result.titulo());
-                        Thread.sleep(2000);
-                    }
-                }
-
-                noticiasList.addAll(noticiasTemp);
-                mapper.writeValue(noticiasJson.toFile(), noticiasList);
-
-            } catch (Exception e) {
-                System.err.println("Erro durante execução: " + e.getMessage());
-                e.printStackTrace();
-                // Aguardar 1 minuto antes de tentar novamente
-                Thread.sleep(60000);
+                String g1 = "-1002403342784";
+                new Bot(args[1]).sendMessageTo(result, chatIdTarget);
+                noticiasTemp.add(result);
+                System.out.println("Nova notícia adicionada: " + result.titulo());
+                Thread.sleep(2000);
             }
         }
+
+        noticiasList.addAll(noticiasTemp);
+        mapper.writeValue(noticiasJson.toFile(), noticiasList);
     }
 
     private static Content getResult(JsonNode content) {
