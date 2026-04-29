@@ -29,7 +29,7 @@ public class Main {
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-        // Agendar para executar a cada 5 minutos
+        // Agendar para executar a cada 3 horas
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 executarTarefa(args);
@@ -37,7 +37,7 @@ public class Main {
                 System.err.println("Erro: " + e.getMessage());
                 e.printStackTrace();
             }
-        }, 0, 10, TimeUnit.HOURS);
+        }, 0, 3, TimeUnit.HOURS);
     }
 
     private static void executarTarefa(String[] args) throws IOException, InterruptedException {
