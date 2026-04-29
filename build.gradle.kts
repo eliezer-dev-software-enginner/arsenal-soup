@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("com.gradleup.shadow") version "8.3.0"  // Adicione esta linha
 }
 
 group = "org.example"
@@ -30,4 +31,12 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Configurar o shadowJar para definir a classe principal
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = "org.example.Main"  // Altere para sua classe principal
+    }
+    archiveFileName.set("${project.name}-${project.version}-all.jar")
 }
