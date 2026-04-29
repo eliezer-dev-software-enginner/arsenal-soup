@@ -1,1 +1,1 @@
-rootProject.name = "g1-soup"
+rootProject.name = "arsenal-soup"

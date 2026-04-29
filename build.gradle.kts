@@ -24,9 +24,6 @@ dependencies {
 
     //enviar mensagens
     implementation("org.telegram:telegrambots-client:9.2.0")
-
-    //para requisicao já que o android não usa o java completo
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 tasks.test {
@@ -38,5 +35,5 @@ tasks.shadowJar {
     manifest {
         attributes["Main-Class"] = "org.example.Main"  // Altere para sua classe principal
     }
-    archiveFileName.set("${project.name}-${project.version}-all.jar")
+    archiveFileName.set("arsenal-soup.jar")
 }
