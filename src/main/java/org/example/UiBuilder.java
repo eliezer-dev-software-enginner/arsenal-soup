@@ -4,16 +4,23 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class UiBuilder {
 
     public static InlineKeyboardMarkup inlineButton(String url) {
+        String proxyBase = "https://proxy-shopee-eliezer-dev.lovable.app/?url=";
+
+        String proxyUrl = proxyBase +
+                URLEncoder.encode(url, StandardCharsets.UTF_8);
+
         // 2. Cria o botão inline "Download"
         // IMPORTANTE: Substitua "https://your.download.link" pela URL real do seu conteúdo.
         InlineKeyboardButton downloadButton = InlineKeyboardButton.builder()
                 .text("⬇️ Ler notícia completa")
-                .url(url) // URL para o download
+                .url(proxyUrl) // URL para o download
                 .build();
 
         var keyboardRow = new InlineKeyboardRow(

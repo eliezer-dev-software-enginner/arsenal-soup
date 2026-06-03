@@ -83,7 +83,7 @@ public class Main {
 
             // Verificar se já existe (forma mais eficiente)
             boolean existe = noticiasList.stream()
-                    .anyMatch(noticia -> noticia.titulo().equals(result.titulo()));
+                    .anyMatch(noticia -> noticia.titulo().trim().equals(result.titulo().trim()));
 
             if (existe) {
                 System.out.println("Notícia já presente no arquivo... Pulando....");
