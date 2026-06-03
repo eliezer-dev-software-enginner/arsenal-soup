@@ -104,8 +104,8 @@ public class Main {
     }
 
     private static Content getResult(JsonNode content) {
-        String titulo = content.get("title").asText();
-        String resumo = content.get("summary").asText();
+        String titulo = content.get("title").asText().trim();
+        String resumo = content.get("summary").asText().trim();
         String link = content.get("url").asText();
         String imagem = content
                 .get("image")
