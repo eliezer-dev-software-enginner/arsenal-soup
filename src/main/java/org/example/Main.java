@@ -4,9 +4,9 @@ package org.example;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import utils.ArgsParser;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,24 +15,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
 
+    static HttpClient client = HttpClient.newHttpClient();
+    static Bot bot;
+    static ObjectMapper mapper = new ObjectMapper();
+
+    static List<Content> noticiasTemp = new ArrayList<>();
+    static String url = "https://recomendacao.globo.com/v3/globocom/rec/g1-trendings?registerImpression=false&responseFormat=legacyPublishing&perPage=20";
+
     static void main(String[] args) {
-        if(args.length < 2) {
-            IO.println("Missing runtime arguments! Aborting");
-            return;
-        }
+        Map<String, String> arguments = ArgsParser.parse(args);
+
+        String targetChannel = arguments.get("targetChannel");
+        String botToken = arguments.get("botToken");
+
+        bot = new Bot(botToken);
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         // Agendar para executar a cada 3 horas
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                executarTarefa(args);
+                executarTarefa(targetChannel);
             } catch (Exception e) {
                 System.err.println("Erro: " + e.getMessage());
                 e.printStackTrace();
@@ -40,13 +50,11 @@ public class Main {
         }, 0, 3, TimeUnit.HOURS);
     }
 
-    private static void executarTarefa(String[] args) throws IOException, InterruptedException {
-
+    private static void executarTarefa(String targetChannel) throws IOException, InterruptedException {
         Path dataDirectory = Path.of(System.getProperty("user.home")).resolve("arsenal-soup");
         if (!Files.exists(dataDirectory)) Files.createDirectory(dataDirectory);
 
         Path noticiasJson = dataDirectory.resolve("noticias.json");
-        ObjectMapper mapper = new ObjectMapper();
 
         List<Content> noticiasList = new ArrayList<>();
         if (!Files.exists(noticiasJson)) {
@@ -56,9 +64,6 @@ public class Main {
             });
         }
 
-        String url = "https://recomendacao.globo.com/v3/globocom/rec/g1-trendings?registerImpression=false&responseFormat=legacyPublishing&perPage=20";
-
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .GET()
@@ -68,8 +73,6 @@ public class Main {
         JsonNode root = mapper.readTree(response.body());
 
         //JsonNode root = mapper.readTree(Path.of("C:\\Users\\3855-2278\\Documents\\outros\\dev\\java\\g1-soup\\response.json").toFile());
-
-        List<Content> noticiasTemp = new ArrayList<>();
 
         for (JsonNode item : root) {
             JsonNode content = item.get("content");
@@ -88,11 +91,7 @@ public class Main {
             if (existe) {
                 System.out.println("Notícia já presente no arquivo... Pulando....");
             } else {
-                String testChannel = "-1003457993247";
-                String chatIdTarget = args[0] == null ? testChannel : args[0];
-
-                String g1 = "-1002403342784";
-                new Bot(args[1]).sendMessageTo(result, chatIdTarget);
+                bot.sendMessageTo(result, targetChannel);
                 noticiasTemp.add(result);
                 System.out.println("Nova notícia adicionada: " + result.titulo());
                 Thread.sleep(2000);
