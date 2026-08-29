@@ -10,6 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +19,8 @@ import java.util.List;
 
 
 public class Bot implements LongPollingSingleThreadUpdateConsumer {
+    private static final Logger log = LoggerFactory.getLogger(Bot.class);
+
     private final TelegramClient telegramClient;
 
     public Bot(String token) {
@@ -44,7 +48,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
             // Executa o envio
             telegramClient.execute(msg);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Erro ao enviar notícia para o canal.", e);
         }
     }
 

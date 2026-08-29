@@ -4,6 +4,8 @@ package org.example;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.ArgsParser;
 
 import java.io.IOException;
@@ -22,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
 
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
+
     static HttpClient client = HttpClient.newHttpClient();
     static Bot bot;
     static ObjectMapper mapper = new ObjectMapper();
@@ -29,11 +33,11 @@ public class Main {
     static List<Content> noticiasTemp = new ArrayList<>();
     static String url = "https://recomendacao.globo.com/v3/globocom/rec/g1-trendings?registerImpression=false&responseFormat=legacyPublishing&perPage=20";
 
-    static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Map<String, String> arguments = ArgsParser.parse(args);
 
-        String targetChannel = arguments.get("targetChannel");
-        String botToken = arguments.get("botToken");
+        String targetChannel = ArgsParser.require(arguments, "targetChannel");
+        String botToken = ArgsParser.require(arguments, "botToken");
 
         bot = new Bot(botToken);
 
@@ -44,10 +48,12 @@ public class Main {
             try {
                 executarTarefa(targetChannel);
             } catch (Exception e) {
-                System.err.println("Erro: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Erro ao executar a tarefa de publicação.", e);
             }
         }, 0, 3, TimeUnit.HOURS);
+
+        log.info("Bot iniciado! Publicando notícias do G1 a cada 3 horas. Pressione Ctrl+C para parar.");
+        Thread.currentThread().join();
     }
 
     private static void executarTarefa(String targetChannel) throws IOException, InterruptedException {
@@ -78,22 +84,21 @@ public class Main {
             JsonNode content = item.get("content");
             Content result = getResult(content);
 
-            System.out.println("Título: " + result.titulo());
-            System.out.println("Resumo: " + result.resumo());
-            System.out.println("Link: " + result.link());
-            System.out.println("Imagem: " + result.imagem());
-            System.out.println("-----");
+            log.debug("Título: {}", result.titulo());
+            log.debug("Resumo: {}", result.resumo());
+            log.debug("Link: {}", result.link());
+            log.debug("Imagem: {}", result.imagem());
 
             // Verificar se já existe (forma mais eficiente)
             boolean existe = noticiasList.stream()
                     .anyMatch(noticia -> noticia.titulo().trim().equals(result.titulo().trim()));
 
             if (existe) {
-                System.out.println("Notícia já presente no arquivo... Pulando....");
+                log.debug("Notícia já presente no arquivo... Pulando {}", result.titulo());
             } else {
                 bot.sendMessageTo(result, targetChannel);
                 noticiasTemp.add(result);
-                System.out.println("Nova notícia adicionada: " + result.titulo());
+                log.info("Nova notícia publicada: {}", result.titulo());
                 Thread.sleep(2000);
             }
         }

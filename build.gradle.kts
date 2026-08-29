@@ -15,6 +15,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // Logging
+    implementation("org.slf4j:slf4j-api:2.0.17")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+
     implementation("org.jsoup:jsoup:1.22.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
 
@@ -35,5 +39,11 @@ tasks.shadowJar {
     manifest {
         attributes["Main-Class"] = "org.example.Main"  // Altere para sua classe principal
     }
-    archiveFileName.set("arsenal-soup.jar")
+    archiveBaseName.set("arsenal-soup")
+    archiveClassifier.set("")
+    archiveVersion.set(project.version.toString())
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }
